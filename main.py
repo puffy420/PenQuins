@@ -3,91 +3,114 @@
 import sys
 sys.path.append('/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.10/site-packages')
 import pygame
+import random
+import math
 
-# Initialize Pygame
+# initialize Pygame
 pygame.init()
 
-# Set up the screen
-screen_width = 800
-screen_height = 600
-screen = pygame.display.set_mode((screen_width, screen_height))
+# set up the window display
+WIDTH, HEIGHT = 800, 600
+display = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("Ball Drop Game")
 
-# Set the window caption
-pygame.display.set_caption("PenQuins")
+# set up colors
+PINK = (255, 192, 203)
+BLUE = (135, 206, 250)
+WHITE = (255, 255, 255)
 
-#Create PenQuin Class
-class lemming:
-    def __init__(self, x, y, speed):
+# set up fonts
+FONT = pygame.font.SysFont("Arial", 30)
+
+# set up variables
+GRAVITY = 0.01
+BALL_SIZE = 20
+BALL_COUNT = 10
+SCORE_PINK = 0
+SCORE_BLUE = 0
+
+
+# define Ball class
+class Ball:
+    def __init__(self, x, y, color):
         self.x = x
         self.y = y
-        self.speed = speed
-        self.direction = "right"
+        self.color = color
+        self.velocity = 0
+        self.scored = False
 
-    def move(self):
-        if self.direction == "right":
-            self.x += self.speed
-        else:
-            self.x -= self.speed
+    def update(self):
+        self.velocity += GRAVITY
+        self.y += self.velocity
+        if self.y >= HEIGHT - BALL_SIZE:
+            self.y = HEIGHT - BALL_SIZE
+            self.velocity = 0
 
-    def check_collision(self, other_object):
-        # Check for collision with other objects in the game
-        pass
+    def draw(self):
+        pygame.draw.circle(display, self.color, (int(self.x), int(self.y)), BALL_SIZE)
 
-#Create Obstacle Class
-class Obstacle:
-    def __init__(self, x, y, width, height):
-        self.x = x
-        self.y = y
-        self.width = width
-        self.height = height
+    def bounce(self):
+        self.velocity = -self.velocity
 
-    def check_collision(self, other_object):
-        # Check for collision with other objects in the game
-        pass
+    def stop(self):
+        self.velocity = 0
 
-#Create Game Class
-class Game:
-    def __init__(self):
-        self.lemmings = []
-        self.obstacles = []
-        self.score = 0
+    def is_colliding(self, other):
+        distance = math.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
+        return distance <= BALL_SIZE * 2
 
-    def spawn_lemming(self):
-        # Spawn a new Lemming in the game world
-        pass
-
-    def assign_task(self, lemming):
-        # Assign a task to a Lemming
-        pass
-
-    def check_collisions(self):
-        # Check for collisions between Lemmings and obstacles
-        pass
-
-# Load the Lemming and obstacle images
-lemming_image = pygame.image.load("lemming.png")
-obstacle_image = pygame.image.load("obstacle.png")
-
-# Add keyboard controls to move the Lemmings
-keys = pygame.key.get_pressed()
-if keys[pygame.K_LEFT]:
-    lemming.direction = "left"
-elif keys[pygame.K_RIGHT]:
-    lemming.direction = "right"
-
-# Draw the Lemmings and obstacles on the screen
-screen.blit(lemming_image, (lemming.x, lemming.y))
-screen.blit(obstacle_image, (obstacle.x, obstacle.y))
+    def score(self):
+        if not self.scored:
+            self.scored = True
+            if self.color == PINK:
+                global SCORE_PINK
+                SCORE_PINK += 1
+            else:
+                global SCORE_BLUE
+                SCORE_BLUE += 1
 
 
-# Run the game loop
-while True:
+# create balls
+balls = []
+for i in range(BALL_COUNT):
+    x = random.randint(BALL_SIZE, WIDTH - BALL_SIZE)
+    y = random.randint(-HEIGHT, -BALL_SIZE)
+    if i % 2 == 0:
+        color = PINK
+    else:
+        color = BLUE
+    ball = Ball(x, y, color)
+    balls.append(ball)
+
+# game loop
+running = True
+while running:
+    # handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+            running = False
 
-    # Draw the game elements
+    # update balls
+    for ball in balls:
+        ball.update()
+        if ball.y == HEIGHT - BALL_SIZE:
+            ball.stop()
+            ball.score()
+        for other in balls:
+            if ball != other and ball.is_colliding(other):
+                ball.bounce()
+                other.bounce()
+                ball.score()
+
+    # draw the screen
+    display.fill(WHITE)
+    for ball in balls:
+        ball.draw()
+    score_text = FONT.render(f"Score: Pink = {SCORE_PINK}, Blue = {SCORE_BLUE}", True, (0, 0, 0))
+    display.blit(score_text, (10, 10))
     pygame.display.update()
 
-
+# reset the score and quit Pygame
+SCORE_PINK = 0
+SCORE_BLUE = 0
+pygame.quit()

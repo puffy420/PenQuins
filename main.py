@@ -13,15 +13,13 @@ screen_height = 600
 screen = pygame.display.set_mode((screen_width, screen_height))
 
 # Set the window caption
-pygame.display.set_caption("PenQuins")
+pygame.display.set_caption("Lemmings")
 
-#Create PenQuin Class
-class lemming:
-    def __init__(self, x, y, speed):
+class Lemming:
+    def __init__(self, x=0, y=0, speed=0):
         self.x = x
         self.y = y
         self.speed = speed
-        self.direction = "right"
 
     def move(self):
         if self.direction == "right":
@@ -32,8 +30,11 @@ class lemming:
     def check_collision(self, other_object):
         # Check for collision with other objects in the game
         pass
+lemming_image = pygame.image.load('lemming.png')
+lemming = Lemming()
+screen.blit(lemming_image, (lemming.x, lemming.y))
 
-#Create Obstacle Class
+
 class Obstacle:
     def __init__(self, x, y, width, height):
         self.x = x
@@ -45,7 +46,6 @@ class Obstacle:
         # Check for collision with other objects in the game
         pass
 
-#Create Game Class
 class Game:
     def __init__(self):
         self.lemmings = []
@@ -76,7 +76,8 @@ elif keys[pygame.K_RIGHT]:
     lemming.direction = "right"
 
 # Draw the Lemmings and obstacles on the screen
-screen.blit(lemming_image, (lemming.x, lemming.y))
+lemming = Lemming(x_value, y_value, speed_value)
+screen.blit(lemming_image, (Lemming.x, Lemming.y))
 screen.blit(obstacle_image, (obstacle.x, obstacle.y))
 
 
@@ -89,5 +90,4 @@ while True:
 
     # Draw the game elements
     pygame.display.update()
-
 

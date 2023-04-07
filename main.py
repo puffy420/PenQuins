@@ -5,6 +5,7 @@ sys.path.append('/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.
 import pygame
 import random
 import math
+import time
 
 # initialize Pygame
 pygame.init()
@@ -23,7 +24,7 @@ WHITE = (255, 255, 255)
 FONT = pygame.font.SysFont("Arial", 30)
 
 # set up variables
-GRAVITY = 0.01
+GRAVITY = 0.005
 BALL_SIZE = 20
 BALL_COUNT = 10
 SCORE_PINK = 0
@@ -38,8 +39,19 @@ class Ball:
         self.color = color
         self.velocity = 0
         self.scored = False
+        self.drop_delay = random.uniform(0.1, 0.5)
+        self.partner = None
+        self.angular_velocity = 0
 
     def update(self):
+        if self.drop_delay > 0:
+            self.drop_delay -= GRAVITY
+            return
+
+        # update angular velocity if this ball is spinning with its partner
+        if self.partner:
+            self.angular_velocity = math.pi / 4
+
         self.velocity += GRAVITY
         self.y += self.velocity
         if self.y >= HEIGHT - BALL_SIZE:
@@ -47,7 +59,12 @@ class Ball:
             self.velocity = 0
 
     def draw(self):
-        pygame.draw.circle(display, self.color, (int(self.x), int(self.y)), BALL_SIZE)
+        # draw both this ball and its partner if it has one
+        if self.partner:
+            pygame.draw.circle(display, self.color, (int(self.x), int(self.y)), BALL_SIZE)
+            pygame.draw.circle(display, self.partner.color, (int(self.partner.x), int(self.partner.y)), BALL_SIZE)
+        else:
+            pygame.draw.circle(display, self.color, (int(self.x), int(self.y)), BALL_SIZE)
 
     def bounce(self):
         self.velocity = -self.velocity
@@ -56,8 +73,8 @@ class Ball:
         self.velocity = 0
 
     def is_colliding(self, other):
-        distance = math.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
-        return distance <= BALL_SIZE * 2
+        distance = math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+        return distance <= BALL_SIZE*2
 
     def score(self):
         if not self.scored:
@@ -69,22 +86,38 @@ class Ball:
                 global SCORE_BLUE
                 SCORE_BLUE += 1
 
+    def join(self, other):
+        self.partner = other
+        other.partner = self
 
-# create balls
-balls = []
-for i in range(BALL_COUNT):
-    x = random.randint(BALL_SIZE, WIDTH - BALL_SIZE)
-    y = random.randint(-HEIGHT, -BALL_SIZE)
-    if i % 2 == 0:
-        color = PINK
-    else:
-        color = BLUE
-    ball = Ball(x, y, color)
-    balls.append(ball)
+    def spin(self):
+        angle = math.atan2(self.partner.y - self.y, self.partner.x - self.x)
+        dx = BALL_SIZE * math.cos(angle + self.angular_velocity) - BALL_SIZE * math.cos(angle)
+        dy = BALL_SIZE * math.sin(angle + self.angular_velocity) - BALL_SIZE * math.sin(angle)
+        self.x += dx
+        self.y += dy
+        self.partner.x -= dx
+        self.partner.y -= dy
 
 # game loop
 running = True
 while running:
+    # reset the score
+    SCORE_PINK = 0
+    SCORE_BLUE = 0
+
+    # create balls
+    balls = []
+    for i in range(BALL_COUNT):
+        x = random.randint(BALL_SIZE, WIDTH - BALL_SIZE)
+        y = random.randint(-HEIGHT, -BALL_SIZE)
+        if i % 2 == 0:
+            color = PINK
+        else:
+            color = BLUE
+        ball = Ball(x, y, color)
+        balls.append(ball)
+
     # handle events
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -98,9 +131,12 @@ while running:
             ball.score()
         for other in balls:
             if ball != other and ball.is_colliding(other):
+                if ball.color != other.color and not ball.partner and not other.partner:
+                    ball.join(other)
                 ball.bounce()
                 other.bounce()
-                ball.score()
+                if ball.partner:
+                    ball.spin()
 
     # draw the screen
     display.fill(WHITE)
@@ -110,7 +146,5 @@ while running:
     display.blit(score_text, (10, 10))
     pygame.display.update()
 
-# reset the score and quit Pygame
-SCORE_PINK = 0
-SCORE_BLUE = 0
+# quit Pygame
 pygame.quit()

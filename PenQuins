@@ -5,6 +5,7 @@ sys.path.append('/Library/Frameworks/Python.framework/Versions/3.10/lib/python3.
 import pygame
 import random
 import math
+import time
 
 # initialize Pygame
 pygame.init()
@@ -23,7 +24,7 @@ WHITE = (255, 255, 255)
 FONT = pygame.font.SysFont("Arial", 30)
 
 # set up variables
-GRAVITY = 0.01
+GRAVITY = 0.005
 BALL_SIZE = 20
 BALL_COUNT = 10
 SCORE_PINK = 0
@@ -38,8 +39,12 @@ class Ball:
         self.color = color
         self.velocity = 0
         self.scored = False
+        self.drop_delay = random.uniform(0.1, 0.5)
 
     def update(self):
+        if self.drop_delay > 0:
+            self.drop_delay -= GRAVITY
+            return
         self.velocity += GRAVITY
         self.y += self.velocity
         if self.y >= HEIGHT - BALL_SIZE:
@@ -56,8 +61,8 @@ class Ball:
         self.velocity = 0
 
     def is_colliding(self, other):
-        distance = math.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2)
-        return distance <= BALL_SIZE * 2
+        distance = math.sqrt((self.x - other.x)**2 + (self.y - other.y)**2)
+        return distance <= BALL_SIZE*2
 
     def score(self):
         if not self.scored:
